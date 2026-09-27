@@ -1,0 +1,2 @@
+? 2.0.0 In this tutorial we'll add a middleware to our MERN-stack project. So what is "middleware"? Middleware is one or more functions that are place in the path of requests that are received by our backend API. Middleware can add additional functionality to our backend REST API, and it can also apply some preliminary processing to requests before they get to the controller where the request processing will be completed. We'll be adding three types of middleware here: "built-in middleware", "custom middleware" & "3-rd party middleware".
+(Go to [server.js])
