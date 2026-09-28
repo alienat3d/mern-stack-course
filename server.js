@@ -1,38 +1,30 @@
+// 3.0.1 Let's import "dotenv" as first here in our main file "server.js" and also add "config()" to it at the end and that will allow us to use "dotenv" throughout our app, we won't need it in every file. Of course, we'll also need to create a ".env" file containing the necessary environment variables. It needs to be located at the same level as "server.js." We must also add this file to the ".gitignore" file so that we don't accidentally upload and publish it.
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions.js");
-const {logger} = require("./middleware/logger");
+const {logger, logEvents} = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
-
+// 3.4.1 So, we'll import that "dbConn" and "mongoose" lib here. We'll also add the "logEvents" function that we've created earlier. ↓
+const mongoose = require("mongoose");
+const connectDB = require("./config/dbConn");
 const PORT = process.env.PORT || 3500;
 
-// 2.3.4 And then we import our custom middleware here and want to run it before anything else. Okay, after testing it works as it should let's go ahead and create one more piece of custom middleware "errorHandler".
-// (Go to [middleware/errorHandler.js])
+// 3.0.2 So, to pull out a value for an environment variable we can write "process.env.NAME_OF_VARIABLE". We'll add there also "DATABASE_URI" variable, which is the connection string to our database, that we'll get from mongodb.com after we create a new database for our project there.
+// (Go to [notes/3-mongodb.md])
+console.log(process.env.NODE_ENV, "mode");
+
+// 3.4.2 And right at the top of file here we'll call "connectDB" function to connect our MongoDB database. ↓
+connectDB();
+
 app.use(logger);
-
-// 2.1 Let's add another one and this built-in middleware "express.json" adds the ability to process JSON in our app. It'll receive and parse JSON data and that what we're going to use.
 app.use(express.json());
-
-// 2.5 Before we start testing again, let's add 3rd party middleware as well. We'll need to install "cookie-parser" for that. As our REST API is going to need to be able to parse cookies, and that's because we're going to use them in this MERN app. So, we'll import that "cookie-parser" library here. And it's actually about as easy as apply built-in "express.json" middleware.
 app.use(cookieParser());
-
-// ? 2.6.0 Okay, that was one easy 3rd party middleware, but I want to add another one that is a little more complicate, but must be added (or at least taken in consideration to be added) every time you create a REST API. I'm talking about CORS ("Cross-Origin Resource Sharing") and it is a security mechanism implemented by web browsers that allows a web page from one origin (domain, protocol, or port) to request and access resources from a server on a different origin. By default, browsers enforce a policy called the Same-Origin Policy. This prevents malicious websites from reading sensitive data from another site (like your bank account or email) without permission. However, modern web apps frequently need to load assets or fetch APIs from separate domains (e.g., a frontend app hosted on app.com fetching data from an API at api.com). CORS provides a secure way to grant that permission via specific HTTP headers (such as Access-Control-Allow-Origin).
-// 2.6.1 So, let's add and do that as if we were creating a public API first, and then we'll secure it afterward. It's actually very easy to se if it were a public API: we'll install "cors" package, and we'll import it here, so that we can use it.
-// 2.6.2 So, right after we added that middleware our server is available to the other resources as public API without a "CORS error". But we actually want to make it private, so we'll secure it and only allow the origins we want to access it. And we'll need to create CORS options for that and two more files inside the "config" folder as well.
-// (Go to [config/allowedOrigins.js])
-// 2.6.9 Then, to apply "corsOptions" to "cors" middleware we simply pass them in. So now, if for test we're going anywhere except those URLs in the "allowedOrigins" list, say to google.com and input in the console "fetch("http://localhost:3500");" there, we'll see the CORS error, as it supposed to be, as "google.com" is not on the list to get access to our API. But what else happened is that now our server also created "error-log.log" file and has a record about that CORS-error just happened.
 app.use(cors(corsOptions));
-
-// ? 2.2.0 Next, let's create and add a custom middleware and for that we'll need to create two more folders: "logs" (because our server needs to be able to log some events like errors or possibly requests) and "middleware" (where we'll have our custom middlewares at). It's also quite good idea to add "logs" folder to ".gitignore" file because we don't really want to send those logs up to GitHub.
-// (Go to [middleware/logger.js])
-
-// 2.0.1 And we already added one piece of middleware that we didn't discuss and that's the built-in middleware "express.static" that's telling our server where to grab static files. I was here explicit when I put this in by giving a root route and the exact path to the folder "public", but you might see this used without quite so much explicit information you can also do. I'll give you an example, let's rewrite this here. And this would still work because it's relative to where our server file is (or "index" or whatever you name you main file). ↑
-// app.use("/", express.static(path.join(__dirname, "public")));
 app.use(express.static("public"));
-
 app.use("/", require("./routes/root"));
 
 app.all("*", (req, res) => {
@@ -46,7 +38,17 @@ app.all("*", (req, res) => {
   }
 });
 
-// 2.4.4 So, now, after it's ready-to-use, we can add that custom middleware "errorHandler" here as well. But unlike the "logger" we'll use it at the very end right before we tell our server to start listening. ↑
 app.use(errorHandler);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// 3.4.3 And then, at very bottom we're going to wrap this "app.listen" method in a listener for the "mongoose.connection.once". And we'll listen for the "open" event as the first argument of it and as the second it'll be a callback function, where we put that "app.listen" at. But let's also display in the console a note that we're connected to MongoDB.
+mongoose.connection.once("open", () => {
+  console.log("Connected to MongoDB");
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+});
+
+// 3.4.4 But let's add another listener here, but instead of "once" we'll use "on" method here, which will be listening for "error" event. Then, we can pass that error to the callback function to display its message in console. But, as we've created the "logEvents" function, it's nice place to use it here. We'll be passing to it an error's number, code, system call and hostname. All of that should be provided through a MongoDB error. And as second argument we'll give a name to this log.
+mongoose.connection.on("error", err => {
+  console.error(err.message);
+  // logEvents(`${err.errno}: ${err.code}\t${err.syscall}\t${err.hostname}`, "mongo-error-log.log");
+  logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, "mongo-error-log.log");
+});

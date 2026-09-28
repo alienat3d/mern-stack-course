@@ -1,2 +1,5 @@
 ? 2.0.0 In this tutorial we'll add a middleware to our MERN-stack project. So what is "middleware"? Middleware is one or more functions that are place in the path of requests that are received by our backend API. Middleware can add additional functionality to our backend REST API, and it can also apply some preliminary processing to requests before they get to the controller where the request processing will be completed. We'll be adding three types of middleware here: "built-in middleware", "custom middleware" & "3-rd party middleware".
 (Go to [server.js])
+
+? 3.0.0 The letter "M" in the MERN stack traditionally stands for "MongoDB," which our app needs for its database, and we'll create data models to operate that. MongoDB is a NoSQL database with collections of documents, and we will connect it to our app in this tutorial. First, let's install the "dotenv" library (`npm i dotenv`), which will allow us to use environment variables in our REST API. Environment variables are values that we want to use on the server when deploying, but we will not store them in GitHub or elsewhere publicly.  
+(Go to [server.js])
